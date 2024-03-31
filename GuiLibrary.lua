@@ -1,4 +1,3 @@
-wait(0.1)
 if shared.VapeExecuted then
 	local VERSION = "4.10"..(shared.VapePrivate and " PRIVATE" or "").." "..readfile("vape/commithash.txt"):sub(1, 6)
 	local baseDirectory = (shared.VapePrivate and "vapeprivate/" or "vape/")
@@ -425,51 +424,36 @@ if shared.VapeExecuted then
 
 	local function dragGUI(gui, mod)
 		task.spawn(function()
-			local dragging = false
-			local dragInput = nil
-			local dragStart = nil
-			local startPos = nil
-	
+			local dragging
+			local dragInput
+			local dragStart = Vector3.new(0,0,0)
+			local startPos
 			local function update(input)
 				local delta = input.Position - dragStart
-				local newPosition = UDim2.new(
-					startPos.X.Scale,
-					startPos.X.Offset + (delta.X / GuiLibrary.MainRescale.Scale),
-					startPos.Y.Scale,
-					startPos.Y.Offset + (delta.Y / GuiLibrary.MainRescale.Scale)
-				)
-	
-				local screenSize = workspace.CurrentCamera.ViewportSize
-				local guiSize = gui.AbsoluteSize
-				newPosition = UDim2.new(
-					math.clamp(newPosition.X.Scale, 0, 1 - guiSize.X / screenSize.X),
-					math.clamp(newPosition.X.Offset, 0, screenSize.X - guiSize.X),
-					math.clamp(newPosition.Y.Scale, 0, 1 - guiSize.Y / screenSize.Y),
-					math.clamp(newPosition.Y.Offset, 0, screenSize.Y - guiSize.Y)
-				)
-	
-				tweenService:Create(gui, TweenInfo.new(.20), {Position = newPosition}):Play()
+				local Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + (delta.X * (1 / GuiLibrary.MainRescale.Scale)), startPos.Y.Scale, startPos.Y.Offset + (delta.Y * (1 / GuiLibrary.MainRescale.Scale)))
+				tweenService:Create(gui, TweenInfo.new(.20), {Position = Position}):Play()
 			end
-	
 			gui.InputBegan:Connect(function(input)
 				if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and (not mod or LegitModulesFrame.Visible) then
-					dragging = true
 					dragStart = input.Position
-					startPos = gui.Position
-					input.Changed:Connect(function()
-						if input.UserInputState == Enum.UserInputState.End then
-							dragging = false
-						end
-					end)
+					local delta = (dragStart - Vector3.new(gui.AbsolutePosition.X, gui.AbsolutePosition.Y, 0)) * (1 / GuiLibrary.MainRescale.Scale)
+					if delta.Y <= 40 then
+						dragging = mod and LegitModulesFrame.Visible or clickgui.Visible
+						startPos = gui.Position
+						
+						input.Changed:Connect(function()
+							if input.UserInputState == Enum.UserInputState.End then
+								dragging = false
+							end
+						end)
+					end
 				end
 			end)
-	
 			gui.InputChanged:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
 					dragInput = input
 				end
 			end)
-	
 			inputService.InputChanged:Connect(function(input)
 				if input == dragInput and dragging then
 					update(input)
@@ -477,6 +461,7 @@ if shared.VapeExecuted then
 			end)
 		end)
 	end
+
 	local function createMobileButton(buttonapi, position)
 		local touchButton = Instance.new("TextButton")
 		touchButton.Size = UDim2.new(0, 40, 0, 40)

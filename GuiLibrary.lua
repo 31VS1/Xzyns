@@ -421,21 +421,15 @@ if shared.VapeExecuted then
 	GuiLibrary["MainRescale"]:GetPropertyChangedSignal("Scale"):Connect(function()
 		vertext.Position = UDim2.new(1 / GuiLibrary["MainRescale"].Scale, -(vertextsize.X) - 20, 1 / GuiLibrary["MainRescale"].Scale, -25)
 	end)
+
 	local function dragGUI(gui, mod)
 		task.spawn(function()
 			local dragging = false
 			local dragInput = nil
 			local dragStart = nil
 			local startPos = nil
-			local lastInputTime = 0
-			local velocity = Vector2.new(0, 0)
-			local deceleration = 0.95 -- Adjust the deceleration rate for desired smoothness
 	
 			local function update(input)
-				local now = tick()
-				local deltaTime = now - lastInputTime
-				lastInputTime = now
-	
 				local delta = input.Position - dragStart
 				local newPosition = UDim2.new(
 					startPos.X.Scale,
@@ -444,7 +438,6 @@ if shared.VapeExecuted then
 					startPos.Y.Offset + (delta.Y / GuiLibrary.MainRescale.Scale)
 				)
 	
-				-- Ensure GUI stays within screen bounds
 				local screenSize = workspace.CurrentCamera.ViewportSize
 				local guiSize = gui.AbsoluteSize
 				newPosition = UDim2.new(
@@ -455,10 +448,6 @@ if shared.VapeExecuted then
 				)
 	
 				tweenService:Create(gui, TweenInfo.new(.20), {Position = newPosition}):Play()
-	
-				-- Update velocity based on input and time
-				local currentVelocity = (input.Position - dragInput.Position) / deltaTime
-				velocity = velocity * deceleration + currentVelocity * (1 - deceleration)
 			end
 	
 			gui.InputBegan:Connect(function(input)
@@ -466,7 +455,6 @@ if shared.VapeExecuted then
 					dragging = true
 					dragStart = input.Position
 					startPos = gui.Position
-					lastInputTime = tick()
 					input.Changed:Connect(function()
 						if input.UserInputState == Enum.UserInputState.End then
 							dragging = false
@@ -481,30 +469,13 @@ if shared.VapeExecuted then
 				end
 			end)
 	
-			while true do
-				if dragging then
-					update(dragInput)
-				elseif velocity.Magnitude > 0.01 then
-					-- Apply inertia if not dragging
-					local newPosition = gui.Position + UDim2.new(0, velocity.X, 0, velocity.Y)
-					local screenSize = workspace.CurrentCamera.ViewportSize
-					local guiSize = gui.AbsoluteSize
-					newPosition = UDim2.new(
-						math.clamp(newPosition.X.Scale, 0, 1 - guiSize.X / screenSize.X),
-						math.clamp(newPosition.X.Offset, 0, screenSize.X - guiSize.X),
-						math.clamp(newPosition.Y.Scale, 0, 1 - guiSize.Y / screenSize.Y),
-						math.clamp(newPosition.Y.Offset, 0, screenSize.Y - guiSize.Y)
-					)
-					tweenService:Create(gui, TweenInfo.new(.20), {Position = newPosition}):Play()
-					velocity = velocity * deceleration
-					task.wait()
-				else
-					task.wait(0.1) -- Wait a bit if no dragging or velocity is low
+			inputService.InputChanged:Connect(function(input)
+				if input == dragInput and dragging then
+					update(input)
 				end
-			end
+			end)
 		end)
 	end
-	
 	local function createMobileButton(buttonapi, position)
 		local touchButton = Instance.new("TextButton")
 		touchButton.Size = UDim2.new(0, 40, 0, 40)
@@ -3321,12 +3292,12 @@ if shared.VapeExecuted then
 			drop2.MouseButton1Click:Connect(function()
 				dropframe.Visible = not dropframe.Visible
 				hoverbox.TextSize = (dropframe.Visible and 0 or 15)
-				dropframe:TweenSize(UDim2.new(1, 0, 0, 200), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.2, true)
+				--children.CanvasSize = UDim2.new(0, 0, 0, uilistlayout2.AbsoluteContentSize.Y + (dropframe.Visible and #dropframe:GetChildren() * 12 or 0) + 10)
 			end)
 			drop1.MouseButton1Click:Connect(function()
 				dropframe.Visible = not dropframe.Visible
 				hoverbox.TextSize = (dropframe.Visible and 0 or 15)
-				dropframe:TweenSize(UDim2.new(1, 0, 0, 200), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.2, true)
+				--children.CanvasSize = UDim2.new(0, 0, 0, uilistlayout2.AbsoluteContentSize.Y + (dropframe.Visible and #dropframe:GetChildren() * 12 or 0) + 10)
 			end)
 			drop1.MouseEnter:Connect(function()
 				thing.BackgroundColor3 = Color3.fromRGB(49, 48, 49)
@@ -3391,6 +3362,7 @@ if shared.VapeExecuted then
 						dropGuiLibrary["Value"] = listobj
 						drop1.Text = "         "..(translations[argstable["Name"]] ~= nil and translations[argstable["Name"]] or argstable["Name"]).." - "..listobj
 						dropframe.Visible = false
+						--children.CanvasSize = UDim2.new(0, 0, 0, uilistlayout2.AbsoluteContentSize.Y + (dropframe.Visible and #dropframe:GetChildren() * 12 or 0) + 10)
 						argstable["Function"](listobj)
 						dropGuiLibrary["UpdateList"](list)
 						GuiLibrary["UpdateHudEvent"]:Fire()
@@ -3413,6 +3385,7 @@ if shared.VapeExecuted then
 			end
 			dropGuiLibrary["UpdateList"](list)
 			GuiLibrary.ObjectsThatCanBeSaved[argstablemain["Name"]..argstable["Name"].."Dropdown"] = {["Type"] = "DropdownMain", ["Object"] = frame, ["Api"] = dropGuiLibrary}
+
 			return dropGuiLibrary
 		end
 
